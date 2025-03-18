@@ -30,3 +30,7 @@ Route::get('/student-teacher/event', [CalendarController::class, 'showCreateForm
 
 Route::post('/student-teacher/event', [CalendarController::class, 'createEventForStudentAndTeacher'])
     ->name('student-teacher.createEvent');
+
+// delete event
+Route::delete('/event/{mappingId}', [CalendarController::class, 'deleteEvent'])->name('student-teacher.deleteEvent');
+

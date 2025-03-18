@@ -9,9 +9,19 @@
             <div class="alert alert-success">
                 {{ session('success') }}
             </div>
+        @elseif(session('error'))
+            <div class="alert alert-danger">
+                {{ session('error') }}
+            </div>
         @endif
 
         @if(isset($events) && count($events))
+            @php
+                // Ambil semua mapping untuk guru yang aktif sebagai collection dan key berdasarkan teacher_event_id
+                $mappings = \App\Models\EventMapping::where('teacher_id', $teacher->id)
+                              ->get()
+                              ->keyBy('teacher_event_id');
+            @endphp
             <table class="table table-bordered">
                 <thead>
                     <tr>
@@ -24,9 +34,7 @@
                 <tbody>
                     @foreach($events as $event)
                         <tr>
-                            <!-- Gunakan properti summary dari event, dan fallback '-' jika tidak ada -->
                             <td>{{ $event->summary ?? '-' }}</td>
-                            <!-- Periksa apakah ada start.dateTime, jika tidak, gunakan start.date -->
                             <td>
                                 {{ isset($event->start->dateTime) ? $event->start->dateTime : (isset($event->start->date) ? $event->start->date : '-') }}
                             </td>
@@ -34,9 +42,15 @@
                                 {{ isset($event->end->dateTime) ? $event->end->dateTime : (isset($event->end->date) ? $event->end->date : '-') }}
                             </td>
                             <td>
-                                {{-- Contoh tombol aksi; sesuaikan route dan aksi jika diperlukan --}}
-                                <a href="#" class="btn btn-sm btn-primary">Edit</a>
-                                <a href="#" class="btn btn-sm btn-danger">Delete</a>
+                                @if(isset($mappings[$event->id]) && $mappings[$event->id]->student_id == auth()->user()->id)
+                                    <form action="{{ route('student-teacher.deleteEvent', $mappings[$event->id]->id) }}" method="POST" onsubmit="return confirm('Yakin ingin menghapus event ini?');" style="display:inline;">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+                                    </form>
+                                @else
+                                    <span class="text-muted">Tidak dapat dihapus</span>
+                                @endif
                             </td>
                         </tr>
                     @endforeach
@@ -77,56 +91,3 @@
     </div>
 </div>
 @endsection
-
-{{-- @extends('layouts.app')
-
-@section('content')
-<div class="row">
-    <div class="col-md-8 offset-md-2">
-        @if(session('success'))
-            <div class="alert alert-success">
-                {{ session('success') }}
-            </div>
-        @elseif(session('error'))
-            <div class="alert alert-danger">
-                {{ session('error') }}
-            </div>
-        @endif
-
-        <div class="card">
-            <div class="card-header">
-                <h4>Form Event untuk Murid & Pengajar</h4>
-            </div>
-            <div class="card-body">
-                <form action="{{ route('student-teacher.createEvent') }}" method="POST">
-                    @csrf
-
-                    <div class="mb-3">
-                        <label for="start" class="form-label">Start</label>
-                        <input type="datetime-local" id="start" name="start" class="form-control" required>
-                    </div>
-
-                    <div class="mb-3">
-                        <label for="end" class="form-label">End</label>
-                        <input type="datetime-local" id="end" name="end" class="form-control" required>
-                    </div>
-
-                    <div class="mb-3">
-                        <label for="summary" class="form-label">Summary</label>
-                        <input type="text" id="summary" name="summary" class="form-control" placeholder="Judul Event">
-                    </div>
-
-                    <div class="mb-3">
-                        <label for="description" class="form-label">Description</label>
-                        <textarea id="description" name="description" class="form-control" rows="3" placeholder="Deskripsi Event"></textarea>
-                    </div>
-
-                    <button type="submit" class="btn btn-primary">
-                        Buat Event di Murid & Pengajar
-                    </button>
-                </form>
-            </div>
-        </div>
-    </div>
-</div>
-@endsection --}}

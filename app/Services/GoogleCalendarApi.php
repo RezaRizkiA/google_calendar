@@ -1,33 +1,39 @@
 <?php
-
 namespace App\Services;
 
+use App\Models\User;
 use Google\Client as GoogleClient;
 use Google\Service\Calendar as GoogleCalendar;
-use App\Models\User;
 
 class GoogleCalendarApi
 {
     public static function getCalendarService(User $user)
     {
-        // Buat instance Google Client
         $client = new GoogleClient();
         $client->setClientId(config('services.google.client_id'));
         $client->setClientSecret(config('services.google.client_secret'));
         $client->setRedirectUri(config('services.google.redirect'));
-        
-        // Set token user
-        $client->setAccessToken($user->google_token);
+        $client->setScopes(['https://www.googleapis.com/auth/calendar']);
 
-        // Jika token kadaluarsa, refresh menggunakan refresh_token 
-        if ($client->isAccessTokenExpired() && $user->google_refresh_token) {
-            $client->fetchAccessTokenWithRefreshToken($user->google_refresh_token);
-            // Update token user di DB
-            $user->google_token = $client->getAccessToken()['access_token'];
-            $user->save();
+        if (empty($user->google_token)) {
+            throw new \Exception('Google token is not available for this user.');
         }
 
-        // Buat Calendar Service
+        $client->setAccessToken($user->google_token);
+
+        if ($client->isAccessTokenExpired() && $user->google_refresh_token) {
+            $newToken = $client->fetchAccessTokenWithRefreshToken($user->google_refresh_token);
+            if (isset($newToken['error'])) {
+                throw new \Exception('Error refreshing token: ' . $newToken['error']);
+            }
+            if (! isset($newToken['refresh_token'])) {
+                $newToken['refresh_token'] = $user->google_refresh_token;
+            }
+            $user->google_token = $newToken;
+            $user->save();
+            $client->setAccessToken($newToken);
+        }
+
         return new GoogleCalendar($client);
     }
 }
