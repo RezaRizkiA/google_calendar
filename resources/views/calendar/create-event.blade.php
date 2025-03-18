@@ -17,7 +17,7 @@
 
         @if(isset($events) && count($events))
             @php
-                // Ambil semua mapping untuk guru yang aktif sebagai collection dan key berdasarkan teacher_event_id
+                // Ambil semua mapping untuk guru yang aktif sebagai collection dengan key berdasarkan teacher_event_id
                 $mappings = \App\Models\EventMapping::where('teacher_id', $teacher->id)
                               ->get()
                               ->keyBy('teacher_event_id');
@@ -36,10 +36,10 @@
                         <tr>
                             <td>{{ $event->summary ?? '-' }}</td>
                             <td>
-                                {{ isset($event->start->dateTime) ? $event->start->dateTime : (isset($event->start->date) ? $event->start->date : '-') }}
+                                {{ $event->formatted_start ?? '-' }}
                             </td>
                             <td>
-                                {{ isset($event->end->dateTime) ? $event->end->dateTime : (isset($event->end->date) ? $event->end->date : '-') }}
+                                {{ $event->formatted_end ?? '-' }}
                             </td>
                             <td>
                                 @if(isset($mappings[$event->id]) && $mappings[$event->id]->student_id == auth()->user()->id)

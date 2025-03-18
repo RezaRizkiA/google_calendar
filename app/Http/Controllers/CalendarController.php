@@ -30,14 +30,34 @@ class CalendarController extends Controller
                 $teacherService      = GoogleCalendarApi::getCalendarService($teacher);
                 $teacherEventsResult = $teacherService->events->listEvents('primary');
                 $events              = $teacherEventsResult->getItems();
-                Log::info('Event diambil dari kalender guru', ['count' => count($events)]);
+
+                // Untuk setiap event, tambahkan properti formatted_start dan formatted_end
+                foreach ($events as $event) {
+                    if (isset($event->start->dateTime)) {
+                        $event->formatted_start = \Carbon\Carbon::parse($event->start->dateTime)
+                            ->format('d M Y, H:i');
+                    } elseif (isset($event->start->date)) {
+                        $event->formatted_start = \Carbon\Carbon::parse($event->start->date)
+                            ->format('d M Y');
+                    } else {
+                        $event->formatted_start = '-';
+                    }
+                    if (isset($event->end->dateTime)) {
+                        $event->formatted_end = \Carbon\Carbon::parse($event->end->dateTime)
+                            ->format('d M Y, H:i');
+                    } elseif (isset($event->end->date)) {
+                        $event->formatted_end = \Carbon\Carbon::parse($event->end->date)
+                            ->format('d M Y');
+                    } else {
+                        $event->formatted_end = '-';
+                    }
+                }
             } catch (\Exception $e) {
-                Log::error('Gagal mengambil event dari kalender guru', ['error' => $e->getMessage()]);
                 return redirect()->back()->with('error', 'Gagal mengambil event: ' . $e->getMessage());
             }
         }
 
-        // Kirim $teacher juga ke view
+        // Kirim $teacher dan $events yang sudah diformat ke view
         return view('calendar.create-event', compact('events', 'teacher'));
     }
 
@@ -74,11 +94,11 @@ class CalendarController extends Controller
                 'summary'     => $request->input('summary', 'Event Murid'),
                 'description' => $request->input('description', 'Dibuat oleh murid'),
                 'start'       => [
-                    'dateTime' => Carbon::parse($request->start)->toAtomString(),
+                    'dateTime' => Carbon::parse($request->start, 'Asia/Jakarta')->toAtomString(),
                     'timeZone' => 'Asia/Jakarta',
                 ],
                 'end'         => [
-                    'dateTime' => Carbon::parse($request->end)->toAtomString(),
+                    'dateTime' => Carbon::parse($request->end, 'Asia/Jakarta')->toAtomString(),
                     'timeZone' => 'Asia/Jakarta',
                 ],
             ]);
@@ -108,11 +128,11 @@ class CalendarController extends Controller
                 'summary'     => $request->input('summary', 'Event Juga di Pengajar'),
                 'description' => $request->input('description', 'Dibuat oleh murid'),
                 'start'       => [
-                    'dateTime' => Carbon::parse($request->start)->toAtomString(),
+                    'dateTime' => Carbon::parse($request->start, 'Asia/Jakarta')->toAtomString(),
                     'timeZone' => 'Asia/Jakarta',
                 ],
                 'end'         => [
-                    'dateTime' => Carbon::parse($request->end)->toAtomString(),
+                    'dateTime' => Carbon::parse($request->end, 'Asia/Jakarta')->toAtomString(),
                     'timeZone' => 'Asia/Jakarta',
                 ],
             ]);
